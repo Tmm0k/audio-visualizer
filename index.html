@@ -1,0 +1,494 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Oracle Eye Audio Visualizer</title>
+  <style>
+    :root {
+      --panel-bg: rgba(5, 11, 24, 0.7);
+      --panel-border: rgba(120, 210, 255, 0.28);
+      --text: #d9f8ff;
+      --muted: #8fb8c7;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: transparent;
+      font-family: Inter, Segoe UI, Roboto, Arial, sans-serif;
+      color: var(--text);
+    }
+
+    #viz {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .panel {
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      width: min(320px, calc(100vw - 32px));
+      backdrop-filter: blur(8px) saturate(140%);
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 14px;
+      padding: 12px 12px 10px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+      z-index: 10;
+      transition: opacity 220ms ease;
+    }
+
+    .panel.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .panel h1 {
+      margin: 0 0 10px;
+      font-size: 14px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #c9f5ff;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 10px;
+      margin: 8px 0;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .row strong {
+      color: var(--text);
+      font-size: 12px;
+      letter-spacing: 0.01em;
+    }
+
+    input[type="range"] {
+      width: 140px;
+      accent-color: #63dbff;
+      cursor: pointer;
+    }
+
+    button {
+      appearance: none;
+      border: 1px solid rgba(127, 230, 255, 0.45);
+      border-radius: 999px;
+      color: #d9f7ff;
+      background: linear-gradient(180deg, rgba(73, 182, 236, 0.3), rgba(19, 92, 143, 0.25));
+      padding: 7px 12px;
+      font-size: 12px;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+    }
+
+    button:hover { filter: brightness(1.13); }
+
+    #status {
+      margin-top: 8px;
+      min-height: 1.2em;
+      font-size: 11px;
+      color: #8dd5ef;
+    }
+
+    .hint {
+      margin-top: 6px;
+      font-size: 10px;
+      color: #6f95a8;
+      line-height: 1.35;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="viz"></canvas>
+
+  <section class="panel" id="panel">
+    <h1>Sci‑Fi Eye Visualizer</h1>
+    <div class="row">
+      <strong>Mic</strong>
+      <button id="micBtn">Enable</button>
+    </div>
+    <div class="row">
+      <strong>Sensitivity</strong>
+      <input id="sensitivity" type="range" min="0.5" max="3" step="0.05" value="1.35" />
+    </div>
+    <div class="row">
+      <strong>Smoothing</strong>
+      <input id="smooth" type="range" min="0.6" max="0.98" step="0.01" value="0.86" />
+    </div>
+    <div class="row">
+      <strong>Background</strong>
+      <input id="bgAlpha" type="range" min="0" max="0.35" step="0.01" value="0" />
+    </div>
+    <div id="status">Idle / no microphone input.</div>
+    <div class="hint">Press <b>H</b> to hide controls for OBS Browser Source.</div>
+  </section>
+
+  <script>
+    const canvas = document.getElementById('viz');
+    const ctx = canvas.getContext('2d');
+
+    const panel = document.getElementById('panel');
+    const micBtn = document.getElementById('micBtn');
+    const statusEl = document.getElementById('status');
+    const sensitivityEl = document.getElementById('sensitivity');
+    const smoothEl = document.getElementById('smooth');
+    const bgAlphaEl = document.getElementById('bgAlpha');
+
+    let w = 0;
+    let h = 0;
+    let dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+    const state = {
+      audioCtx: null,
+      analyser: null,
+      source: null,
+      stream: null,
+      data: null,
+      hasMic: false,
+      sensitivity: Number(sensitivityEl.value),
+      smoothing: Number(smoothEl.value),
+      bgAlpha: Number(bgAlphaEl.value),
+      level: 0,
+      levelFast: 0,
+      peakHold: 0,
+      t: 0,
+      pulse: 0,
+      phase: Math.random() * Math.PI * 2,
+      shimmer: Math.random() * Math.PI * 2,
+      beamBloom: 0,
+      waveSeed: [Math.random() * 10, Math.random() * 10, Math.random() * 10],
+    };
+
+    function resize() {
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      w = window.innerWidth;
+      h = window.innerHeight;
+      canvas.width = Math.round(w * dpr);
+      canvas.height = Math.round(h * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    window.addEventListener('resize', resize);
+    resize();
+
+    function clamp(v, a = 0, b = 1) {
+      return Math.max(a, Math.min(b, v));
+    }
+
+    function lerp(a, b, t) {
+      return a + (b - a) * t;
+    }
+
+    function mixColor(c1, c2, t) {
+      return [
+        Math.round(lerp(c1[0], c2[0], t)),
+        Math.round(lerp(c1[1], c2[1], t)),
+        Math.round(lerp(c1[2], c2[2], t)),
+      ];
+    }
+
+    function colorStr(c, a = 1) {
+      return `rgba(${c[0]}, ${c[1]}, ${c[2]}, ${a})`;
+    }
+
+    async function enableMic() {
+      if (state.hasMic) return;
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 1024;
+        analyser.smoothingTimeConstant = state.smoothing;
+
+        const source = audioCtx.createMediaStreamSource(stream);
+        source.connect(analyser);
+
+        state.stream = stream;
+        state.audioCtx = audioCtx;
+        state.analyser = analyser;
+        state.source = source;
+        state.data = new Uint8Array(analyser.frequencyBinCount);
+        state.hasMic = true;
+
+        micBtn.textContent = 'Enabled';
+        statusEl.textContent = 'Microphone active.';
+      } catch (err) {
+        statusEl.textContent = 'Microphone unavailable: ' + (err && err.message ? err.message : err);
+      }
+    }
+
+    micBtn.addEventListener('click', enableMic);
+
+    sensitivityEl.addEventListener('input', () => {
+      state.sensitivity = Number(sensitivityEl.value);
+    });
+
+    smoothEl.addEventListener('input', () => {
+      state.smoothing = Number(smoothEl.value);
+      if (state.analyser) state.analyser.smoothingTimeConstant = state.smoothing;
+    });
+
+    bgAlphaEl.addEventListener('input', () => {
+      state.bgAlpha = Number(bgAlphaEl.value);
+    });
+
+    window.addEventListener('keydown', (ev) => {
+      if (ev.key.toLowerCase() === 'h') panel.classList.toggle('hidden');
+    });
+
+    function sampleAudio() {
+      if (!state.analyser || !state.data) {
+        state.levelFast *= 0.94;
+        state.level *= 0.975;
+        return;
+      }
+
+      state.analyser.getByteFrequencyData(state.data);
+
+      let low = 0;
+      let mid = 0;
+      let high = 0;
+      const n = state.data.length;
+
+      for (let i = 1; i < n; i++) {
+        const v = state.data[i] / 255;
+        if (i < n * 0.13) low += v;
+        else if (i < n * 0.45) mid += v;
+        else high += v;
+      }
+
+      low /= Math.max(1, Math.floor(n * 0.13));
+      mid /= Math.max(1, Math.floor(n * 0.32));
+      high /= Math.max(1, Math.floor(n * 0.55));
+
+      const weighted = (low * 0.8 + mid * 1.2 + high * 0.5) / 1.95;
+      const mapped = clamp(Math.pow(weighted * state.sensitivity, 1.18));
+
+      state.levelFast = lerp(state.levelFast, mapped, 0.34);
+      state.level = lerp(state.level, state.levelFast, mapped > state.level ? 0.2 : 0.06);
+      state.peakHold = Math.max(state.level, state.peakHold * 0.96);
+      state.pulse = (state.pulse + 0.09 + mapped * 0.4) % (Math.PI * 2);
+
+      const mode = state.level;
+      if (mode > 0.8) statusEl.textContent = 'Attack mode / energized.';
+      else if (mode > 0.38) statusEl.textContent = 'Reactive / tracking voice.';
+      else statusEl.textContent = state.hasMic ? 'Idle scanning.' : 'Idle / no microphone input.';
+    }
+
+    function drawEye(cx, cy, baseR, energy, attack, palette) {
+      const t = state.t;
+      const irisPulse = Math.sin(state.pulse) * 0.5 + 0.5;
+      const liveShimmer = Math.sin(t * 3.5 + state.shimmer) * 0.5 + 0.5;
+      const breathe = 1 + Math.sin(t * 1.45 + state.phase) * 0.02 + energy * 0.07;
+
+      const irisR = baseR * (0.88 - energy * 0.09 + irisPulse * 0.025);
+      const pupilR = baseR * (0.19 - energy * 0.08 + liveShimmer * 0.01);
+      const coreR = baseR * (0.12 + energy * 0.055);
+
+      const bloomRadius = baseR * (2 + energy * 1.7 + attack * 1.2);
+      const bloom = ctx.createRadialGradient(cx, cy, 0, cx, cy, bloomRadius);
+      bloom.addColorStop(0, colorStr(palette.hot, 0.28 + attack * 0.2));
+      bloom.addColorStop(0.4, colorStr(palette.main, 0.1 + energy * 0.14));
+      bloom.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = bloom;
+      ctx.beginPath();
+      ctx.arc(cx, cy, bloomRadius, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.scale(breathe, 1 / breathe);
+      ctx.translate(-cx, -cy);
+
+      for (let i = 0; i < 4; i++) {
+        const ringR = baseR * (1.05 + i * 0.24 + Math.sin(t * 1.1 + i) * 0.012);
+        const seg = 16 + i * 6;
+        ctx.strokeStyle = colorStr(i % 2 ? palette.aux : palette.main, 0.15 + energy * 0.17 - i * 0.025);
+        ctx.lineWidth = Math.max(1, baseR * (0.016 - i * 0.002));
+        ctx.beginPath();
+        for (let s = 0; s < seg; s++) {
+          const a0 = (s / seg) * Math.PI * 2 + t * (0.07 + i * 0.04);
+          const a1 = a0 + (Math.PI * 2 / seg) * (0.45 + 0.15 * Math.sin(t * 2 + s));
+          if (s % 2 === 0 || i % 2 === 1) {
+            ctx.moveTo(cx + Math.cos(a0) * ringR, cy + Math.sin(a0) * ringR);
+            ctx.arc(cx, cy, ringR, a0, a1);
+          }
+        }
+        ctx.stroke();
+      }
+
+      const iris = ctx.createRadialGradient(cx, cy, pupilR * 0.2, cx, cy, irisR);
+      iris.addColorStop(0, colorStr(palette.hot, 0.95));
+      iris.addColorStop(0.28, colorStr(palette.main, 0.85));
+      iris.addColorStop(0.64, colorStr(palette.aux, 0.54));
+      iris.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = iris;
+      ctx.beginPath();
+      ctx.arc(cx, cy, irisR, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.strokeStyle = colorStr(palette.hot, 0.75 + attack * 0.15);
+      ctx.lineWidth = baseR * 0.022;
+      ctx.beginPath();
+      ctx.arc(cx, cy, irisR * (0.83 + liveShimmer * 0.02), 0, Math.PI * 2);
+      ctx.stroke();
+
+      for (let n = 0; n < 5; n++) {
+        const a = (Math.PI * 2 * n / 5) + t * (0.5 + n * 0.03);
+        const r0 = pupilR + baseR * 0.05;
+        const r1 = irisR - baseR * 0.06;
+        ctx.strokeStyle = colorStr(palette.hot, 0.12 + energy * 0.2);
+        ctx.lineWidth = baseR * 0.009;
+        ctx.beginPath();
+        ctx.moveTo(cx + Math.cos(a) * r0, cy + Math.sin(a) * r0);
+        ctx.lineTo(cx + Math.cos(a + 0.13) * r1, cy + Math.sin(a + 0.13) * r1);
+        ctx.stroke();
+      }
+
+      const pupil = ctx.createRadialGradient(cx, cy, 0, cx, cy, pupilR * 1.45);
+      pupil.addColorStop(0, colorStr([255, 255, 255], 0.95));
+      pupil.addColorStop(0.35, colorStr(palette.hot, 0.9));
+      pupil.addColorStop(1, colorStr([8, 10, 18], 0.95));
+      ctx.fillStyle = pupil;
+      ctx.beginPath();
+      ctx.arc(cx, cy, pupilR, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = colorStr([255, 255, 255], 0.9);
+      ctx.beginPath();
+      ctx.arc(
+        cx + Math.cos(t * 1.2) * coreR * 0.35,
+        cy + Math.sin(t * 1.5) * coreR * 0.28,
+        coreR,
+        0,
+        Math.PI * 2
+      );
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    function drawWavefronts(cx, cy, baseR, energy, attack, palette) {
+      const rings = 5;
+      const t = state.t;
+      for (let i = 0; i < rings; i++) {
+        const phase = (t * (0.75 + i * 0.09) + state.waveSeed[i % state.waveSeed.length]) % 1;
+        const spread = baseR * (1.2 + i * 0.34 + phase * (1.6 + energy * 1.2));
+        const alpha = (1 - phase) * (0.17 + energy * 0.2) * (1 - i / rings);
+        const wobble = Math.sin((t + i) * 2.3) * baseR * 0.015;
+
+        ctx.strokeStyle = colorStr(i % 2 ? palette.main : palette.aux, alpha + attack * 0.05);
+        ctx.lineWidth = Math.max(1, baseR * (0.02 - i * 0.0035));
+
+        ctx.beginPath();
+        const points = 110;
+        for (let p = 0; p <= points; p++) {
+          const a = (p / points) * Math.PI * 2;
+          const ripple = Math.sin(a * 3 + t * 3.4 + i) * baseR * 0.018 * (0.5 + energy);
+          const rr = spread + wobble + ripple;
+          const x = cx + Math.cos(a) * rr;
+          const y = cy + Math.sin(a) * rr;
+          if (p === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        }
+        ctx.closePath();
+        ctx.stroke();
+      }
+    }
+
+    function drawBeam(cx, cy, baseR, energy, attack, palette) {
+      const beamPower = clamp((energy - 0.62) / 0.38) * (0.6 + attack * 0.4);
+      if (beamPower <= 0.02) return;
+
+      const length = Math.min(w, h) * (0.42 + beamPower * 0.45);
+      const width = baseR * (0.08 + beamPower * 0.26);
+      const flicker = 1 + Math.sin(state.t * 34) * 0.06;
+      const endX = cx + length;
+
+      const grad = ctx.createLinearGradient(cx, cy, endX, cy);
+      grad.addColorStop(0, colorStr([255, 250, 245], 0.68 * beamPower));
+      grad.addColorStop(0.12, colorStr(palette.hot, 0.52 * beamPower));
+      grad.addColorStop(0.55, colorStr(palette.main, 0.25 * beamPower));
+      grad.addColorStop(1, 'rgba(0,0,0,0)');
+
+      ctx.save();
+      ctx.globalCompositeOperation = 'screen';
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.moveTo(cx + baseR * 0.4, cy - width * flicker);
+      ctx.lineTo(endX, cy - width * 0.32);
+      ctx.lineTo(endX, cy + width * 0.32);
+      ctx.lineTo(cx + baseR * 0.4, cy + width * flicker);
+      ctx.closePath();
+      ctx.fill();
+
+      const core = ctx.createLinearGradient(cx, cy, endX, cy);
+      core.addColorStop(0, colorStr([255, 255, 255], 0.9 * beamPower));
+      core.addColorStop(0.28, colorStr(palette.hot, 0.45 * beamPower));
+      core.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.strokeStyle = core;
+      ctx.lineWidth = Math.max(1.2, width * 0.18);
+      ctx.beginPath();
+      ctx.moveTo(cx + baseR * 0.3, cy);
+      ctx.lineTo(endX, cy);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function render() {
+      requestAnimationFrame(render);
+      sampleAudio();
+
+      state.t += 0.012 + state.level * 0.02;
+
+      const cx = w * 0.5;
+      const cy = h * 0.5;
+      const baseR = Math.min(w, h) * 0.12;
+
+      if (state.bgAlpha > 0) {
+        ctx.fillStyle = `rgba(2, 6, 16, ${state.bgAlpha})`;
+        ctx.fillRect(0, 0, w, h);
+      } else {
+        ctx.clearRect(0, 0, w, h);
+      }
+
+      const energy = clamp(state.level * 1.15 + Math.sin(state.t * 1.4) * 0.03 + 0.05);
+      const attack = clamp((energy - 0.67) / 0.33);
+
+      const coolMain = [88, 224, 255];
+      const coolAux = [84, 150, 255];
+      const midMain = [108, 245, 255];
+      const midAux = [144, 104, 255];
+      const hotMain = [255, 84, 70];
+      const hotAux = [255, 124, 92];
+
+      const mediumMix = clamp((energy - 0.25) / 0.45);
+      const attackMix = attack;
+
+      const main = mixColor(mixColor(coolMain, midMain, mediumMix), hotMain, attackMix);
+      const aux = mixColor(mixColor(coolAux, midAux, mediumMix), hotAux, attackMix);
+      const hot = mixColor([232, 255, 255], [255, 235, 235], attackMix);
+      const palette = { main, aux, hot };
+
+      drawWavefronts(cx, cy, baseR, energy, attack, palette);
+      drawBeam(cx, cy, baseR, energy, attack, palette);
+      drawEye(cx, cy, baseR, energy, attack, palette);
+    }
+
+    render();
+  </script>
+</body>
+</html>
