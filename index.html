@@ -54,12 +54,34 @@
       padding: 12px 12px 10px;
       box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
       z-index: 10;
-      transition: opacity 220ms ease;
+      transition: opacity 220ms ease, transform 220ms ease;
     }
 
     .panel.hidden {
       opacity: 0;
       pointer-events: none;
+      transform: translateX(-18px) scale(0.985);
+    }
+
+    .panel-toggle {
+      position: fixed;
+      top: 16px;
+      left: 350px;
+      z-index: 13;
+      border-radius: 999px;
+      border: 1px solid var(--hud-border);
+      background: linear-gradient(180deg, rgba(80, 186, 232, 0.28), rgba(20, 61, 102, 0.3));
+      box-shadow:
+        inset 0 0 14px rgba(111, 215, 255, 0.16),
+        0 0 16px rgba(31, 130, 180, 0.24);
+      backdrop-filter: blur(7px) saturate(145%);
+      color: #d8f6ff;
+      transition: left 220ms ease, filter 160ms ease;
+      white-space: nowrap;
+    }
+
+    body.panel-collapsed .panel-toggle {
+      left: 16px;
     }
 
     .panel h1 {
@@ -179,6 +201,8 @@
 <body>
   <div id="viz"></div>
 
+  <button class="panel-toggle" id="panelToggle" aria-controls="panel" aria-expanded="true">Hide Controls</button>
+
   <section class="panel" id="panel">
     <h1>Sci‑Fi Eye Visualizer</h1>
     <div class="row">
@@ -220,6 +244,7 @@
   <script src="https://cdn.jsdelivr.net/npm/p5@1.9.4/lib/p5.min.js"></script>
   <script>
     const panel = document.getElementById('panel');
+    const panelToggle = document.getElementById('panelToggle');
     const micBtn = document.getElementById('micBtn');
     const statusEl = document.getElementById('status');
     const sensitivityEl = document.getElementById('sensitivity');
@@ -338,10 +363,14 @@
       btn.addEventListener('click', () => setDirection(btn.dataset.dir));
     });
 
+    panelToggle.addEventListener('click', () => {
+      setPanelVisible(panel.classList.contains('hidden'));
+    });
+
     window.addEventListener('keydown', (ev) => {
       const k = ev.key.toLowerCase();
       if (k === 'h') {
-        panel.classList.toggle('hidden');
+        setPanelVisible(panel.classList.contains('hidden'));
         return;
       }
 
@@ -638,7 +667,14 @@
     };
 
     setDirection('center');
+    setPanelVisible(true);
     new p5(sketch);
   </script>
 </body>
 </html>
+    function setPanelVisible(visible) {
+      panel.classList.toggle('hidden', !visible);
+      document.body.classList.toggle('panel-collapsed', !visible);
+      panelToggle.textContent = visible ? 'Hide Controls' : 'Show Controls';
+      panelToggle.setAttribute('aria-expanded', String(visible));
+    }
