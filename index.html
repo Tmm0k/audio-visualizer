@@ -6,13 +6,13 @@
   <title>Oracle Eye Audio Visualizer</title>
   <style>
     :root {
-      --panel-bg: rgba(5, 11, 24, 0.7);
-      --panel-border: rgba(120, 210, 255, 0.28);
-      --text: #d9f8ff;
-      --muted: #8fb8c7;
-      --hud-bg: rgba(13, 28, 52, 0.36);
-      --hud-border: rgba(127, 223, 255, 0.35);
-      --hud-glow: rgba(115, 220, 255, 0.4);
+      --panel-bg: rgba(3, 10, 4, 0.78);
+      --panel-border: rgba(110, 255, 148, 0.28);
+      --text: #d9ffe2;
+      --muted: #7fb490;
+      --hud-bg: rgba(7, 20, 9, 0.42);
+      --hud-border: rgba(118, 255, 157, 0.35);
+      --hud-glow: rgba(123, 255, 166, 0.42);
     }
 
     * { box-sizing: border-box; }
@@ -70,12 +70,12 @@
       z-index: 13;
       border-radius: 999px;
       border: 1px solid var(--hud-border);
-      background: linear-gradient(180deg, rgba(80, 186, 232, 0.28), rgba(20, 61, 102, 0.3));
+      background: linear-gradient(180deg, rgba(84, 227, 122, 0.3), rgba(12, 40, 16, 0.32));
       box-shadow:
-        inset 0 0 14px rgba(111, 215, 255, 0.16),
-        0 0 16px rgba(31, 130, 180, 0.24);
+        inset 0 0 14px rgba(140, 255, 176, 0.18),
+        0 0 16px rgba(41, 140, 67, 0.3);
       backdrop-filter: blur(7px) saturate(145%);
-      color: #d8f6ff;
+      color: #e1ffe8;
       transition: left 220ms ease, filter 160ms ease;
       white-space: nowrap;
     }
@@ -89,7 +89,7 @@
       font-size: 14px;
       letter-spacing: 0.08em;
       text-transform: uppercase;
-      color: #c9f5ff;
+      color: #ccffd8;
     }
 
     .row {
@@ -110,16 +110,16 @@
 
     input[type="range"] {
       width: 140px;
-      accent-color: #63dbff;
+      accent-color: #66ff9a;
       cursor: pointer;
     }
 
     button {
       appearance: none;
-      border: 1px solid rgba(127, 230, 255, 0.45);
+      border: 1px solid rgba(122, 255, 164, 0.45);
       border-radius: 999px;
-      color: #d9f7ff;
-      background: linear-gradient(180deg, rgba(73, 182, 236, 0.3), rgba(19, 92, 143, 0.25));
+      color: #dcffe6;
+      background: linear-gradient(180deg, rgba(81, 230, 122, 0.32), rgba(14, 61, 24, 0.28));
       padding: 7px 12px;
       font-size: 12px;
       letter-spacing: 0.02em;
@@ -129,73 +129,25 @@
     button:hover { filter: brightness(1.13); }
 
     #squintBtn.active {
-      border-color: rgba(255, 169, 132, 0.75);
-      background: linear-gradient(180deg, rgba(255, 118, 87, 0.5), rgba(142, 41, 33, 0.38));
-      box-shadow: 0 0 20px rgba(255, 95, 66, 0.35);
+      border-color: rgba(205, 255, 224, 0.82);
+      background: linear-gradient(180deg, rgba(149, 255, 186, 0.52), rgba(36, 112, 50, 0.4));
+      box-shadow: 0 0 20px rgba(134, 255, 172, 0.4);
     }
 
     #status {
       margin-top: 8px;
       min-height: 1.2em;
       font-size: 11px;
-      color: #8dd5ef;
+      color: #9de9b6;
     }
 
     .hint {
       margin-top: 6px;
       font-size: 10px;
-      color: #6f95a8;
+      color: #5d8c68;
       line-height: 1.35;
     }
 
-    .joystick {
-      position: fixed;
-      right: max(14px, env(safe-area-inset-right));
-      bottom: max(14px, env(safe-area-inset-bottom));
-      width: 170px;
-      height: 170px;
-      border-radius: 22px;
-      border: 1px solid var(--hud-border);
-      background: radial-gradient(circle at 50% 40%, rgba(102, 211, 255, 0.2), var(--hud-bg));
-      box-shadow:
-        inset 0 0 28px rgba(114, 215, 255, 0.12),
-        0 0 24px rgba(41, 132, 185, 0.24);
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      grid-template-rows: repeat(3, 1fr);
-      gap: 6px;
-      padding: 9px;
-      z-index: 12;
-      backdrop-filter: blur(7px) saturate(150%);
-    }
-
-    .joy-btn {
-      border-radius: 14px;
-      border: 1px solid rgba(137, 234, 255, 0.35);
-      background: linear-gradient(180deg, rgba(85, 182, 224, 0.3), rgba(20, 57, 95, 0.3));
-      color: #d8f6ff;
-      font-weight: 600;
-      font-size: 14px;
-      padding: 0;
-      display: grid;
-      place-items: center;
-      box-shadow: inset 0 0 12px rgba(115, 211, 255, 0.16);
-      user-select: none;
-      touch-action: manipulation;
-    }
-
-    .joy-btn:hover,
-    .joy-btn:active,
-    .joy-btn.active {
-      border-color: rgba(174, 241, 255, 0.85);
-      box-shadow: 0 0 20px var(--hud-glow), inset 0 0 16px rgba(141, 231, 255, 0.32);
-      filter: brightness(1.14);
-    }
-
-    .joystick .spacer {
-      opacity: 0;
-      pointer-events: none;
-    }
   </style>
 </head>
 <body>
@@ -227,19 +179,8 @@
     </div>
     <div id="status">Idle / no microphone input.</div>
     <div class="hint">Press <b>H</b> to hide controls for OBS Browser Source.</div>
+    <div class="hint">Use <b>Arrow Keys</b> to aim the eye.</div>
   </section>
-
-  <div class="joystick" id="joystick" aria-label="Eye Direction Control">
-    <div class="spacer"></div>
-    <button class="joy-btn" data-dir="up" aria-label="Look up">▲</button>
-    <div class="spacer"></div>
-    <button class="joy-btn" data-dir="left" aria-label="Look left">◀</button>
-    <button class="joy-btn" data-dir="center" aria-label="Center eye">◎</button>
-    <button class="joy-btn" data-dir="right" aria-label="Look right">▶</button>
-    <div class="spacer"></div>
-    <button class="joy-btn" data-dir="down" aria-label="Look down">▼</button>
-    <div class="spacer"></div>
-  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/p5@1.9.4/lib/p5.min.js"></script>
   <script>
@@ -251,7 +192,6 @@
     const smoothEl = document.getElementById('smooth');
     const bgAlphaEl = document.getElementById('bgAlpha');
     const squintBtn = document.getElementById('squintBtn');
-    const joyBtns = Array.from(document.querySelectorAll('.joy-btn'));
 
     function clamp(v, a = 0, b = 1) {
       return Math.max(a, Math.min(b, v));
@@ -293,8 +233,9 @@
       squintAmt: 0,
       eyeTarget: { x: 0, y: 0 },
       eyeCurrent: { x: 0, y: 0 },
-      direction: 'center',
     };
+
+    const arrowState = { left: false, right: false, up: false, down: false };
 
     function setPanelVisible(visible) {
       panel.classList.toggle('hidden', !visible);
@@ -331,19 +272,18 @@
       }
     }
 
-    function setDirection(direction) {
-      const map = {
-        left: { x: -1, y: 0 },
-        right: { x: 1, y: 0 },
-        up: { x: 0, y: -1 },
-        down: { x: 0, y: 1 },
-        center: { x: 0, y: 0 },
-      };
-      const target = map[direction] || map.center;
-      state.eyeTarget.x = target.x;
-      state.eyeTarget.y = target.y;
-      state.direction = direction;
-      joyBtns.forEach((btn) => btn.classList.toggle('active', btn.dataset.dir === direction));
+    function updateEyeTargetFromKeys() {
+      const x = (arrowState.right ? 1 : 0) - (arrowState.left ? 1 : 0);
+      const y = (arrowState.down ? 1 : 0) - (arrowState.up ? 1 : 0);
+      const mag = Math.hypot(x, y);
+
+      if (mag > 0) {
+        state.eyeTarget.x = x / mag;
+        state.eyeTarget.y = y / mag;
+      } else {
+        state.eyeTarget.x = 0;
+        state.eyeTarget.y = 0;
+      }
     }
 
     micBtn.addEventListener('click', enableMic);
@@ -368,9 +308,6 @@
       squintBtn.setAttribute('aria-pressed', String(state.squint));
     });
 
-    joyBtns.forEach((btn) => {
-      btn.addEventListener('click', () => setDirection(btn.dataset.dir));
-    });
 
     panelToggle.addEventListener('click', () => {
       setPanelVisible(panel.classList.contains('hidden'));
@@ -383,20 +320,43 @@
         return;
       }
 
-      const keyMap = {
-        arrowleft: 'left',
-        arrowright: 'right',
-        arrowup: 'up',
-        arrowdown: 'down',
-        '0': 'center',
-        c: 'center',
-      };
-
-      const dir = keyMap[k];
-      if (dir) {
-        ev.preventDefault();
-        setDirection(dir);
+      if (k.startsWith('arrow')) {
+        const dir = k.replace('arrow', '');
+        if (dir in arrowState) {
+          ev.preventDefault();
+          arrowState[dir] = true;
+          updateEyeTargetFromKeys();
+          return;
+        }
       }
+
+      if (k === '0' || k === 'c') {
+        arrowState.left = false;
+        arrowState.right = false;
+        arrowState.up = false;
+        arrowState.down = false;
+        updateEyeTargetFromKeys();
+      }
+    });
+
+    window.addEventListener('keyup', (ev) => {
+      const k = ev.key.toLowerCase();
+      if (k.startsWith('arrow')) {
+        const dir = k.replace('arrow', '');
+        if (dir in arrowState) {
+          ev.preventDefault();
+          arrowState[dir] = false;
+          updateEyeTargetFromKeys();
+        }
+      }
+    });
+
+    window.addEventListener('blur', () => {
+      arrowState.left = false;
+      arrowState.right = false;
+      arrowState.up = false;
+      arrowState.down = false;
+      updateEyeTargetFromKeys();
     });
 
     function sampleAudio() {
@@ -620,7 +580,7 @@
         state.squintAmt = lerp(state.squintAmt, state.squint ? 1 : 0, 0.1);
 
         if (state.bgAlpha > 0) {
-          p.background(2, 6, 16, state.bgAlpha * 255);
+          p.background(1, 5, 2, state.bgAlpha * 255);
         } else {
           p.clear();
         }
@@ -632,17 +592,17 @@
         const energy = clamp(state.level * 1.15 + Math.sin(state.t * 1.4) * 0.03 + 0.05);
         const attack = clamp((energy - 0.67) / 0.33);
 
-        const coolMain = [88, 224, 255];
-        const coolAux = [84, 150, 255];
-        const midMain = [108, 245, 255];
-        const midAux = [144, 104, 255];
-        const hotMain = [255, 84, 70];
-        const hotAux = [255, 124, 92];
+        const coolMain = [38, 130, 54];
+        const coolAux = [24, 84, 34];
+        const midMain = [72, 214, 102];
+        const midAux = [46, 154, 72];
+        const hotMain = [133, 255, 169];
+        const hotAux = [188, 255, 209];
 
         const mediumMix = clamp((energy - 0.25) / 0.45);
         const main = mixColor(mixColor(coolMain, midMain, mediumMix), hotMain, attack);
         const aux = mixColor(mixColor(coolAux, midAux, mediumMix), hotAux, attack);
-        const hot = mixColor([232, 255, 255], [255, 235, 235], attack);
+        const hot = mixColor([230, 255, 236], [245, 255, 248], attack);
         const palette = { main, aux, hot };
 
         drawWavefronts(cx, cy, baseR, energy, attack, palette);
@@ -651,7 +611,7 @@
       };
     };
 
-    setDirection('center');
+    updateEyeTargetFromKeys();
     if (typeof window.setPanelVisible === 'function') {
       window.setPanelVisible(true);
     }
