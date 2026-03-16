@@ -617,13 +617,7 @@
 
         p.pop();
 
-        p.noStroke();
-        p.fill(2, 8, 16, 135 + state.squintAmt * 80);
-        const shutterInset = baseR * (0.82 - aperture * 0.82);
-        p.rect(cx - baseR * 2.2, cy - baseR * 1.2, baseR * 4.4, shutterInset);
-        p.rect(cx - baseR * 2.2, cy + baseR * 1.2 - shutterInset, baseR * 4.4, shutterInset);
-
-        // Horizontal aperture guide lines removed per UI request.
+        // Removed horizontal top/bottom shutter overlays per latest visual request.
 
         p.pop();
       }
