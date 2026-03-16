@@ -453,7 +453,7 @@
         const endX = cx + length;
 
         const grad = p.drawingContext.createLinearGradient(cx, cy, endX, cy);
-        grad.addColorStop(0, `rgba(255,250,245,${0.68 * beamPower})`);
+        grad.addColorStop(0, `rgba(214,255,226,${0.68 * beamPower})`);
         grad.addColorStop(0.12, `rgba(${palette.hot[0]},${palette.hot[1]},${palette.hot[2]},${0.52 * beamPower})`);
         grad.addColorStop(0.55, `rgba(${palette.main[0]},${palette.main[1]},${palette.main[2]},${0.25 * beamPower})`);
         grad.addColorStop(1, 'rgba(0,0,0,0)');
@@ -470,9 +470,9 @@
         p.endShape(p.CLOSE);
 
         const core = p.drawingContext.createLinearGradient(cx, cy, endX, cy);
-        core.addColorStop(0, `rgba(255,255,255,${0.9 * beamPower})`);
+        core.addColorStop(0, `rgba(210,255,224,${0.9 * beamPower})`);
         core.addColorStop(0.28, `rgba(${palette.hot[0]},${palette.hot[1]},${palette.hot[2]},${0.45 * beamPower})`);
-        core.addColorStop(1, 'rgba(255,255,255,0)');
+        core.addColorStop(1, 'rgba(210,255,224,0)');
         p.drawingContext.strokeStyle = core;
         p.strokeWeight(Math.max(1.2, width * 0.18));
         p.line(cx + baseR * 0.3, cy, endX, cy);
@@ -546,18 +546,18 @@
 
         p.noFill();
         p.stroke(palette.hot[0], palette.hot[1], palette.hot[2], (0.75 + attack * 0.15 + state.squintAmt * 0.05) * 255);
-        p.strokeWeight(baseR * 0.022);
+        p.strokeWeight(baseR * 0.014);
         p.circle(irisCx, irisCy, irisR * (0.83 + liveShimmer * 0.02) * 2 * focus);
 
         const pupil = p.drawingContext.createRadialGradient(irisCx, irisCy, 0, irisCx, irisCy, pupilR * 1.45);
-        pupil.addColorStop(0, 'rgba(255,255,255,0.95)');
+        pupil.addColorStop(0, 'rgba(202,255,218,0.95)');
         pupil.addColorStop(0.35, `rgba(${palette.hot[0]},${palette.hot[1]},${palette.hot[2]},0.9)`);
         pupil.addColorStop(1, 'rgba(8,10,18,0.95)');
         p.drawingContext.fillStyle = pupil;
         p.noStroke();
         p.circle(irisCx, irisCy, pupilR * 2 * (1 + state.squintAmt * 0.06));
 
-        p.fill(255, 255, 255, 230);
+        p.fill(198, 255, 214, 230);
         p.circle(
           irisCx + Math.cos(state.t * 1.2) * coreR * 0.35,
           irisCy + Math.sin(state.t * 1.5) * coreR * 0.28,
