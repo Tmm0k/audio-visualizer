@@ -10,6 +10,9 @@
       --panel-border: rgba(120, 210, 255, 0.28);
       --text: #d9f8ff;
       --muted: #8fb8c7;
+      --hud-bg: rgba(13, 28, 52, 0.36);
+      --hud-border: rgba(127, 223, 255, 0.35);
+      --hud-glow: rgba(115, 220, 255, 0.4);
     }
 
     * { box-sizing: border-box; }
@@ -30,6 +33,13 @@
       width: 100%;
       height: 100%;
       display: block;
+      z-index: 1;
+    }
+
+    #viz canvas {
+      display: block;
+      width: 100% !important;
+      height: 100% !important;
     }
 
     .panel {
@@ -44,12 +54,34 @@
       padding: 12px 12px 10px;
       box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
       z-index: 10;
-      transition: opacity 220ms ease;
+      transition: opacity 220ms ease, transform 220ms ease;
     }
 
     .panel.hidden {
       opacity: 0;
       pointer-events: none;
+      transform: translateX(-18px) scale(0.985);
+    }
+
+    .panel-toggle {
+      position: fixed;
+      top: 16px;
+      left: 350px;
+      z-index: 13;
+      border-radius: 999px;
+      border: 1px solid var(--hud-border);
+      background: linear-gradient(180deg, rgba(80, 186, 232, 0.28), rgba(20, 61, 102, 0.3));
+      box-shadow:
+        inset 0 0 14px rgba(111, 215, 255, 0.16),
+        0 0 16px rgba(31, 130, 180, 0.24);
+      backdrop-filter: blur(7px) saturate(145%);
+      color: #d8f6ff;
+      transition: left 220ms ease, filter 160ms ease;
+      white-space: nowrap;
+    }
+
+    body.panel-collapsed .panel-toggle {
+      left: 16px;
     }
 
     .panel h1 {
@@ -96,6 +128,12 @@
 
     button:hover { filter: brightness(1.13); }
 
+    #squintBtn.active {
+      border-color: rgba(255, 169, 132, 0.75);
+      background: linear-gradient(180deg, rgba(255, 118, 87, 0.5), rgba(142, 41, 33, 0.38));
+      box-shadow: 0 0 20px rgba(255, 95, 66, 0.35);
+    }
+
     #status {
       margin-top: 8px;
       min-height: 1.2em;
@@ -109,10 +147,61 @@
       color: #6f95a8;
       line-height: 1.35;
     }
+
+    .joystick {
+      position: fixed;
+      right: max(14px, env(safe-area-inset-right));
+      bottom: max(14px, env(safe-area-inset-bottom));
+      width: 170px;
+      height: 170px;
+      border-radius: 22px;
+      border: 1px solid var(--hud-border);
+      background: radial-gradient(circle at 50% 40%, rgba(102, 211, 255, 0.2), var(--hud-bg));
+      box-shadow:
+        inset 0 0 28px rgba(114, 215, 255, 0.12),
+        0 0 24px rgba(41, 132, 185, 0.24);
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      gap: 6px;
+      padding: 9px;
+      z-index: 12;
+      backdrop-filter: blur(7px) saturate(150%);
+    }
+
+    .joy-btn {
+      border-radius: 14px;
+      border: 1px solid rgba(137, 234, 255, 0.35);
+      background: linear-gradient(180deg, rgba(85, 182, 224, 0.3), rgba(20, 57, 95, 0.3));
+      color: #d8f6ff;
+      font-weight: 600;
+      font-size: 14px;
+      padding: 0;
+      display: grid;
+      place-items: center;
+      box-shadow: inset 0 0 12px rgba(115, 211, 255, 0.16);
+      user-select: none;
+      touch-action: manipulation;
+    }
+
+    .joy-btn:hover,
+    .joy-btn:active,
+    .joy-btn.active {
+      border-color: rgba(174, 241, 255, 0.85);
+      box-shadow: 0 0 20px var(--hud-glow), inset 0 0 16px rgba(141, 231, 255, 0.32);
+      filter: brightness(1.14);
+    }
+
+    .joystick .spacer {
+      opacity: 0;
+      pointer-events: none;
+    }
   </style>
 </head>
 <body>
-  <canvas id="viz"></canvas>
+  <div id="viz"></div>
+
+  <button class="panel-toggle" id="panelToggle" aria-controls="panel" aria-expanded="true">Hide Controls</button>
 
   <section class="panel" id="panel">
     <h1>Sci‑Fi Eye Visualizer</h1>
@@ -132,24 +221,53 @@
       <strong>Background</strong>
       <input id="bgAlpha" type="range" min="0" max="0.35" step="0.01" value="0" />
     </div>
+    <div class="row">
+      <strong>Squint</strong>
+      <button id="squintBtn" aria-pressed="false">Off</button>
+    </div>
     <div id="status">Idle / no microphone input.</div>
     <div class="hint">Press <b>H</b> to hide controls for OBS Browser Source.</div>
   </section>
 
-  <script>
-    const canvas = document.getElementById('viz');
-    const ctx = canvas.getContext('2d');
+  <div class="joystick" id="joystick" aria-label="Eye Direction Control">
+    <div class="spacer"></div>
+    <button class="joy-btn" data-dir="up" aria-label="Look up">▲</button>
+    <div class="spacer"></div>
+    <button class="joy-btn" data-dir="left" aria-label="Look left">◀</button>
+    <button class="joy-btn" data-dir="center" aria-label="Center eye">◎</button>
+    <button class="joy-btn" data-dir="right" aria-label="Look right">▶</button>
+    <div class="spacer"></div>
+    <button class="joy-btn" data-dir="down" aria-label="Look down">▼</button>
+    <div class="spacer"></div>
+  </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/p5@1.9.4/lib/p5.min.js"></script>
+  <script>
     const panel = document.getElementById('panel');
+    const panelToggle = document.getElementById('panelToggle');
     const micBtn = document.getElementById('micBtn');
     const statusEl = document.getElementById('status');
     const sensitivityEl = document.getElementById('sensitivity');
     const smoothEl = document.getElementById('smooth');
     const bgAlphaEl = document.getElementById('bgAlpha');
+    const squintBtn = document.getElementById('squintBtn');
+    const joyBtns = Array.from(document.querySelectorAll('.joy-btn'));
 
-    let w = 0;
-    let h = 0;
-    let dpr = Math.min(window.devicePixelRatio || 1, 2);
+    function clamp(v, a = 0, b = 1) {
+      return Math.max(a, Math.min(b, v));
+    }
+
+    function lerp(a, b, t) {
+      return a + (b - a) * t;
+    }
+
+    function mixColor(c1, c2, t) {
+      return [
+        Math.round(lerp(c1[0], c2[0], t)),
+        Math.round(lerp(c1[1], c2[1], t)),
+        Math.round(lerp(c1[2], c2[2], t)),
+      ];
+    }
 
     const state = {
       audioCtx: null,
@@ -168,40 +286,21 @@
       pulse: 0,
       phase: Math.random() * Math.PI * 2,
       shimmer: Math.random() * Math.PI * 2,
-      beamBloom: 0,
       waveSeed: [Math.random() * 10, Math.random() * 10, Math.random() * 10],
+      speakingThreshold: 0.2,
+      ringActivity: 0,
+      squint: false,
+      squintAmt: 0,
+      eyeTarget: { x: 0, y: 0 },
+      eyeCurrent: { x: 0, y: 0 },
+      direction: 'center',
     };
 
-    function resize() {
-      dpr = Math.min(window.devicePixelRatio || 1, 2);
-      w = window.innerWidth;
-      h = window.innerHeight;
-      canvas.width = Math.round(w * dpr);
-      canvas.height = Math.round(h * dpr);
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    }
-
-    window.addEventListener('resize', resize);
-    resize();
-
-    function clamp(v, a = 0, b = 1) {
-      return Math.max(a, Math.min(b, v));
-    }
-
-    function lerp(a, b, t) {
-      return a + (b - a) * t;
-    }
-
-    function mixColor(c1, c2, t) {
-      return [
-        Math.round(lerp(c1[0], c2[0], t)),
-        Math.round(lerp(c1[1], c2[1], t)),
-        Math.round(lerp(c1[2], c2[2], t)),
-      ];
-    }
-
-    function colorStr(c, a = 1) {
-      return `rgba(${c[0]}, ${c[1]}, ${c[2]}, ${a})`;
+    function setPanelVisible(visible) {
+      panel.classList.toggle('hidden', !visible);
+      document.body.classList.toggle('panel-collapsed', !visible);
+      panelToggle.textContent = visible ? 'Hide Controls' : 'Show Controls';
+      panelToggle.setAttribute('aria-expanded', String(visible));
     }
 
     async function enableMic() {
@@ -230,6 +329,21 @@
       }
     }
 
+    function setDirection(direction) {
+      const map = {
+        left: { x: -1, y: 0 },
+        right: { x: 1, y: 0 },
+        up: { x: 0, y: -1 },
+        down: { x: 0, y: 1 },
+        center: { x: 0, y: 0 },
+      };
+      const target = map[direction] || map.center;
+      state.eyeTarget.x = target.x;
+      state.eyeTarget.y = target.y;
+      state.direction = direction;
+      joyBtns.forEach((btn) => btn.classList.toggle('active', btn.dataset.dir === direction));
+    }
+
     micBtn.addEventListener('click', enableMic);
 
     sensitivityEl.addEventListener('input', () => {
@@ -245,14 +359,49 @@
       state.bgAlpha = Number(bgAlphaEl.value);
     });
 
+    squintBtn.addEventListener('click', () => {
+      state.squint = !state.squint;
+      squintBtn.classList.toggle('active', state.squint);
+      squintBtn.textContent = state.squint ? 'On' : 'Off';
+      squintBtn.setAttribute('aria-pressed', String(state.squint));
+    });
+
+    joyBtns.forEach((btn) => {
+      btn.addEventListener('click', () => setDirection(btn.dataset.dir));
+    });
+
+    panelToggle.addEventListener('click', () => {
+      setPanelVisible(panel.classList.contains('hidden'));
+    });
+
     window.addEventListener('keydown', (ev) => {
-      if (ev.key.toLowerCase() === 'h') panel.classList.toggle('hidden');
+      const k = ev.key.toLowerCase();
+      if (k === 'h') {
+        setPanelVisible(panel.classList.contains('hidden'));
+        return;
+      }
+
+      const keyMap = {
+        arrowleft: 'left',
+        arrowright: 'right',
+        arrowup: 'up',
+        arrowdown: 'down',
+        '0': 'center',
+        c: 'center',
+      };
+
+      const dir = keyMap[k];
+      if (dir) {
+        ev.preventDefault();
+        setDirection(dir);
+      }
     });
 
     function sampleAudio() {
       if (!state.analyser || !state.data) {
         state.levelFast *= 0.94;
         state.level *= 0.975;
+        state.ringActivity = lerp(state.ringActivity, 0, 0.08);
         return;
       }
 
@@ -274,221 +423,237 @@
       mid /= Math.max(1, Math.floor(n * 0.32));
       high /= Math.max(1, Math.floor(n * 0.55));
 
-      const weighted = (low * 0.8 + mid * 1.2 + high * 0.5) / 1.95;
-      const mapped = clamp(Math.pow(weighted * state.sensitivity, 1.18));
+      const weighted = (low * 0.62 + mid * 1.45 + high * 0.45) / 2.52;
+      const mapped = clamp(Math.pow(weighted * state.sensitivity * 1.15, 1.03));
 
-      state.levelFast = lerp(state.levelFast, mapped, 0.34);
-      state.level = lerp(state.level, state.levelFast, mapped > state.level ? 0.2 : 0.06);
-      state.peakHold = Math.max(state.level, state.peakHold * 0.96);
-      state.pulse = (state.pulse + 0.09 + mapped * 0.4) % (Math.PI * 2);
+      state.levelFast = lerp(state.levelFast, mapped, 0.52);
+      state.level = lerp(state.level, state.levelFast, mapped > state.level ? 0.42 : 0.15);
+      state.peakHold = Math.max(state.level, state.peakHold * 0.94);
+      state.pulse = (state.pulse + 0.11 + mapped * 0.52) % (Math.PI * 2);
 
-      const mode = state.level;
-      if (mode > 0.8) statusEl.textContent = 'Attack mode / energized.';
-      else if (mode > 0.38) statusEl.textContent = 'Reactive / tracking voice.';
+      const speechEnergy = clamp((state.level - state.speakingThreshold) / (1 - state.speakingThreshold));
+      const speaking = speechEnergy > 0.02;
+      state.ringActivity = lerp(state.ringActivity, speechEnergy, speaking ? 0.34 : 0.12);
+
+      if (state.level > 0.8) statusEl.textContent = 'Attack mode / energized.';
+      else if (speaking) statusEl.textContent = 'Reactive / tracking voice.';
       else statusEl.textContent = state.hasMic ? 'Idle scanning.' : 'Idle / no microphone input.';
     }
 
-    function drawEye(cx, cy, baseR, energy, attack, palette) {
-      const t = state.t;
-      const irisPulse = Math.sin(state.pulse) * 0.5 + 0.5;
-      const liveShimmer = Math.sin(t * 3.5 + state.shimmer) * 0.5 + 0.5;
-      const breathe = 1 + Math.sin(t * 1.45 + state.phase) * 0.02 + energy * 0.07;
+    const sketch = (p) => {
+      p.setup = () => {
+        const holder = document.getElementById('viz');
+        const canvas = p.createCanvas(window.innerWidth, window.innerHeight);
+        canvas.parent(holder);
+        p.pixelDensity(Math.min(window.devicePixelRatio || 1, 2));
+        p.noiseSeed(Math.floor(Math.random() * 1e6));
+      };
 
-      const irisR = baseR * (0.88 - energy * 0.09 + irisPulse * 0.025);
-      const pupilR = baseR * (0.19 - energy * 0.08 + liveShimmer * 0.01);
-      const coreR = baseR * (0.12 + energy * 0.055);
+      p.windowResized = () => {
+        p.resizeCanvas(window.innerWidth, window.innerHeight);
+      };
 
-      const bloomRadius = baseR * (2 + energy * 1.7 + attack * 1.2);
-      const bloom = ctx.createRadialGradient(cx, cy, 0, cx, cy, bloomRadius);
-      bloom.addColorStop(0, colorStr(palette.hot, 0.28 + attack * 0.2));
-      bloom.addColorStop(0.4, colorStr(palette.main, 0.1 + energy * 0.14));
-      bloom.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.fillStyle = bloom;
-      ctx.beginPath();
-      ctx.arc(cx, cy, bloomRadius, 0, Math.PI * 2);
-      ctx.fill();
+      function drawWavefronts(cx, cy, baseR, energy, attack, palette) {
+        const active = state.ringActivity;
+        if (active < 0.02) return;
 
-      ctx.save();
-      ctx.translate(cx, cy);
-      ctx.scale(breathe, 1 / breathe);
-      ctx.translate(-cx, -cy);
+        const rings = 6;
+        for (let i = 0; i < rings; i++) {
+          const phase = (state.t * (0.95 + i * 0.11) + state.waveSeed[i % state.waveSeed.length]) % 1;
+          const spread = baseR * (1.08 + i * 0.3 + phase * (1.75 + energy * 1.45));
+          const alpha = (1 - phase) * (0.24 + energy * 0.28) * (1 - i / rings) * (0.55 + active * 0.7);
+          const wobble = Math.sin((state.t + i) * 2.3) * baseR * 0.015;
 
-      for (let i = 0; i < 4; i++) {
-        const ringR = baseR * (1.05 + i * 0.24 + Math.sin(t * 1.1 + i) * 0.012);
-        const seg = 16 + i * 6;
-        ctx.strokeStyle = colorStr(i % 2 ? palette.aux : palette.main, 0.15 + energy * 0.17 - i * 0.025);
-        ctx.lineWidth = Math.max(1, baseR * (0.016 - i * 0.002));
-        ctx.beginPath();
-        for (let s = 0; s < seg; s++) {
-          const a0 = (s / seg) * Math.PI * 2 + t * (0.07 + i * 0.04);
-          const a1 = a0 + (Math.PI * 2 / seg) * (0.45 + 0.15 * Math.sin(t * 2 + s));
-          if (s % 2 === 0 || i % 2 === 1) {
-            ctx.moveTo(cx + Math.cos(a0) * ringR, cy + Math.sin(a0) * ringR);
-            ctx.arc(cx, cy, ringR, a0, a1);
+          const c = i % 2 ? palette.main : palette.aux;
+          p.noFill();
+          p.stroke(c[0], c[1], c[2], (alpha + attack * 0.05 * active) * 255);
+          p.strokeWeight(Math.max(1.05, baseR * (0.022 - i * 0.0032)));
+
+          p.beginShape();
+          const points = 95;
+          for (let point = 0; point <= points; point++) {
+            const a = (point / points) * Math.PI * 2;
+            const ripple = Math.sin(a * 3 + state.t * 4.2 + i) * baseR * 0.022 * (0.55 + energy * 1.1) * (0.45 + active * 0.9);
+            const rr = spread + wobble + ripple;
+            p.vertex(cx + Math.cos(a) * rr, cy + Math.sin(a) * rr);
+          }
+          p.endShape(p.CLOSE);
+        }
+      }
+
+      function drawBeam(cx, cy, baseR, energy, attack, palette) {
+        const beamPower = clamp((energy - 0.62) / 0.38) * (0.6 + attack * 0.4);
+        if (beamPower <= 0.02) return;
+
+        const length = Math.min(p.width, p.height) * (0.42 + beamPower * 0.45);
+        const width = baseR * (0.08 + beamPower * 0.26);
+        const flicker = 1 + Math.sin(state.t * 34) * 0.06;
+        const endX = cx + length;
+
+        const grad = p.drawingContext.createLinearGradient(cx, cy, endX, cy);
+        grad.addColorStop(0, `rgba(255,250,245,${0.68 * beamPower})`);
+        grad.addColorStop(0.12, `rgba(${palette.hot[0]},${palette.hot[1]},${palette.hot[2]},${0.52 * beamPower})`);
+        grad.addColorStop(0.55, `rgba(${palette.main[0]},${palette.main[1]},${palette.main[2]},${0.25 * beamPower})`);
+        grad.addColorStop(1, 'rgba(0,0,0,0)');
+
+        p.push();
+        p.blendMode(p.SCREEN);
+        p.noStroke();
+        p.drawingContext.fillStyle = grad;
+        p.beginShape();
+        p.vertex(cx + baseR * 0.4, cy - width * flicker);
+        p.vertex(endX, cy - width * 0.32);
+        p.vertex(endX, cy + width * 0.32);
+        p.vertex(cx + baseR * 0.4, cy + width * flicker);
+        p.endShape(p.CLOSE);
+
+        const core = p.drawingContext.createLinearGradient(cx, cy, endX, cy);
+        core.addColorStop(0, `rgba(255,255,255,${0.9 * beamPower})`);
+        core.addColorStop(0.28, `rgba(${palette.hot[0]},${palette.hot[1]},${palette.hot[2]},${0.45 * beamPower})`);
+        core.addColorStop(1, 'rgba(255,255,255,0)');
+        p.drawingContext.strokeStyle = core;
+        p.strokeWeight(Math.max(1.2, width * 0.18));
+        p.line(cx + baseR * 0.3, cy, endX, cy);
+        p.pop();
+      }
+
+      function drawEye(cx, cy, baseR, energy, attack, palette) {
+        const irisPulse = Math.sin(state.pulse) * 0.5 + 0.5;
+        const liveShimmer = Math.sin(state.t * 3.5 + state.shimmer) * 0.5 + 0.5;
+        const breathe = 1 + Math.sin(state.t * 1.45 + state.phase) * 0.02 + energy * 0.07;
+
+        const irisR = baseR * (0.88 - energy * 0.09 + irisPulse * 0.025);
+        const pupilR = baseR * (0.19 - energy * 0.08 + liveShimmer * 0.01);
+        const coreR = baseR * (0.12 + energy * 0.055);
+
+        const eyeOffsetX = state.eyeCurrent.x * baseR * 0.24;
+        const eyeOffsetY = state.eyeCurrent.y * baseR * 0.2;
+        const irisCx = cx + eyeOffsetX;
+        const irisCy = cy + eyeOffsetY;
+
+        const aperture = 1 - state.squintAmt * 0.38;
+        const focus = 1 + state.squintAmt * 0.2;
+
+        const bloomRadius = baseR * (2 + energy * 1.7 + attack * 1.2 + state.squintAmt * 0.2);
+        const bloom = p.drawingContext.createRadialGradient(cx, cy, 0, cx, cy, bloomRadius);
+        bloom.addColorStop(0, `rgba(${palette.hot[0]},${palette.hot[1]},${palette.hot[2]},${0.28 + attack * 0.2})`);
+        bloom.addColorStop(0.4, `rgba(${palette.main[0]},${palette.main[1]},${palette.main[2]},${0.1 + energy * 0.14})`);
+        bloom.addColorStop(1, 'rgba(0,0,0,0)');
+        p.noStroke();
+        p.drawingContext.fillStyle = bloom;
+        p.circle(cx, cy, bloomRadius * 2);
+
+        p.push();
+        p.translate(cx, cy);
+        p.scale(breathe, 1 / breathe);
+        p.translate(-cx, -cy);
+
+        const ringAlpha = state.ringActivity;
+        if (ringAlpha > 0.02) {
+          for (let i = 0; i < 4; i++) {
+            const ringR = baseR * (1.05 + i * 0.24 + Math.sin(state.t * 1.1 + i) * 0.012);
+            const seg = 16 + i * 6;
+            const c = i % 2 ? palette.aux : palette.main;
+            p.stroke(c[0], c[1], c[2], (0.15 + energy * 0.17 - i * 0.025) * 255 * ringAlpha);
+            p.strokeWeight(Math.max(1, baseR * (0.016 - i * 0.002)));
+            p.noFill();
+
+            for (let s = 0; s < seg; s++) {
+              const a0 = (s / seg) * Math.PI * 2 + state.t * (0.07 + i * 0.04);
+              const a1 = a0 + (Math.PI * 2 / seg) * (0.45 + 0.15 * Math.sin(state.t * 2 + s));
+              if (s % 2 === 0 || i % 2 === 1) {
+                p.arc(cx, cy, ringR * 2, ringR * 2, a0, a1);
+              }
+            }
           }
         }
-        ctx.stroke();
+
+        p.push();
+        p.translate(cx, cy);
+        p.scale(1, aperture);
+        p.translate(-cx, -cy);
+
+        const iris = p.drawingContext.createRadialGradient(irisCx, irisCy, pupilR * 0.2, irisCx, irisCy, irisR);
+        iris.addColorStop(0, `rgba(${palette.hot[0]},${palette.hot[1]},${palette.hot[2]},0.95)`);
+        iris.addColorStop(0.28, `rgba(${palette.main[0]},${palette.main[1]},${palette.main[2]},0.85)`);
+        iris.addColorStop(0.64, `rgba(${palette.aux[0]},${palette.aux[1]},${palette.aux[2]},0.54)`);
+        iris.addColorStop(1, 'rgba(0,0,0,0)');
+        p.noStroke();
+        p.drawingContext.fillStyle = iris;
+        p.circle(irisCx, irisCy, irisR * 2 * focus);
+
+        p.noFill();
+        p.stroke(palette.hot[0], palette.hot[1], palette.hot[2], (0.75 + attack * 0.15 + state.squintAmt * 0.05) * 255);
+        p.strokeWeight(baseR * 0.022);
+        p.circle(irisCx, irisCy, irisR * (0.83 + liveShimmer * 0.02) * 2 * focus);
+
+        const pupil = p.drawingContext.createRadialGradient(irisCx, irisCy, 0, irisCx, irisCy, pupilR * 1.45);
+        pupil.addColorStop(0, 'rgba(255,255,255,0.95)');
+        pupil.addColorStop(0.35, `rgba(${palette.hot[0]},${palette.hot[1]},${palette.hot[2]},0.9)`);
+        pupil.addColorStop(1, 'rgba(8,10,18,0.95)');
+        p.drawingContext.fillStyle = pupil;
+        p.noStroke();
+        p.circle(irisCx, irisCy, pupilR * 2 * (1 + state.squintAmt * 0.06));
+
+        p.fill(255, 255, 255, 230);
+        p.circle(
+          irisCx + Math.cos(state.t * 1.2) * coreR * 0.35,
+          irisCy + Math.sin(state.t * 1.5) * coreR * 0.28,
+          coreR * 2
+        );
+
+        p.pop();
+
+        // Removed horizontal top/bottom shutter overlays per latest visual request.
+
+        p.pop();
       }
 
-      const iris = ctx.createRadialGradient(cx, cy, pupilR * 0.2, cx, cy, irisR);
-      iris.addColorStop(0, colorStr(palette.hot, 0.95));
-      iris.addColorStop(0.28, colorStr(palette.main, 0.85));
-      iris.addColorStop(0.64, colorStr(palette.aux, 0.54));
-      iris.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.fillStyle = iris;
-      ctx.beginPath();
-      ctx.arc(cx, cy, irisR, 0, Math.PI * 2);
-      ctx.fill();
+      p.draw = () => {
+        sampleAudio();
 
-      ctx.strokeStyle = colorStr(palette.hot, 0.75 + attack * 0.15);
-      ctx.lineWidth = baseR * 0.022;
-      ctx.beginPath();
-      ctx.arc(cx, cy, irisR * (0.83 + liveShimmer * 0.02), 0, Math.PI * 2);
-      ctx.stroke();
+        state.t += 0.012 + state.level * 0.02;
+        state.eyeCurrent.x = lerp(state.eyeCurrent.x, state.eyeTarget.x, 0.085);
+        state.eyeCurrent.y = lerp(state.eyeCurrent.y, state.eyeTarget.y, 0.085);
+        state.squintAmt = lerp(state.squintAmt, state.squint ? 1 : 0, 0.1);
 
-      for (let n = 0; n < 5; n++) {
-        const a = (Math.PI * 2 * n / 5) + t * (0.5 + n * 0.03);
-        const r0 = pupilR + baseR * 0.05;
-        const r1 = irisR - baseR * 0.06;
-        ctx.strokeStyle = colorStr(palette.hot, 0.12 + energy * 0.2);
-        ctx.lineWidth = baseR * 0.009;
-        ctx.beginPath();
-        ctx.moveTo(cx + Math.cos(a) * r0, cy + Math.sin(a) * r0);
-        ctx.lineTo(cx + Math.cos(a + 0.13) * r1, cy + Math.sin(a + 0.13) * r1);
-        ctx.stroke();
-      }
-
-      const pupil = ctx.createRadialGradient(cx, cy, 0, cx, cy, pupilR * 1.45);
-      pupil.addColorStop(0, colorStr([255, 255, 255], 0.95));
-      pupil.addColorStop(0.35, colorStr(palette.hot, 0.9));
-      pupil.addColorStop(1, colorStr([8, 10, 18], 0.95));
-      ctx.fillStyle = pupil;
-      ctx.beginPath();
-      ctx.arc(cx, cy, pupilR, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.fillStyle = colorStr([255, 255, 255], 0.9);
-      ctx.beginPath();
-      ctx.arc(
-        cx + Math.cos(t * 1.2) * coreR * 0.35,
-        cy + Math.sin(t * 1.5) * coreR * 0.28,
-        coreR,
-        0,
-        Math.PI * 2
-      );
-      ctx.fill();
-
-      ctx.restore();
-    }
-
-    function drawWavefronts(cx, cy, baseR, energy, attack, palette) {
-      const rings = 5;
-      const t = state.t;
-      for (let i = 0; i < rings; i++) {
-        const phase = (t * (0.75 + i * 0.09) + state.waveSeed[i % state.waveSeed.length]) % 1;
-        const spread = baseR * (1.2 + i * 0.34 + phase * (1.6 + energy * 1.2));
-        const alpha = (1 - phase) * (0.17 + energy * 0.2) * (1 - i / rings);
-        const wobble = Math.sin((t + i) * 2.3) * baseR * 0.015;
-
-        ctx.strokeStyle = colorStr(i % 2 ? palette.main : palette.aux, alpha + attack * 0.05);
-        ctx.lineWidth = Math.max(1, baseR * (0.02 - i * 0.0035));
-
-        ctx.beginPath();
-        const points = 110;
-        for (let p = 0; p <= points; p++) {
-          const a = (p / points) * Math.PI * 2;
-          const ripple = Math.sin(a * 3 + t * 3.4 + i) * baseR * 0.018 * (0.5 + energy);
-          const rr = spread + wobble + ripple;
-          const x = cx + Math.cos(a) * rr;
-          const y = cy + Math.sin(a) * rr;
-          if (p === 0) ctx.moveTo(x, y);
-          else ctx.lineTo(x, y);
+        if (state.bgAlpha > 0) {
+          p.background(2, 6, 16, state.bgAlpha * 255);
+        } else {
+          p.clear();
         }
-        ctx.closePath();
-        ctx.stroke();
-      }
+
+        const cx = p.width * 0.5;
+        const cy = p.height * 0.5;
+        const baseR = Math.min(p.width, p.height) * 0.12;
+
+        const energy = clamp(state.level * 1.15 + Math.sin(state.t * 1.4) * 0.03 + 0.05);
+        const attack = clamp((energy - 0.67) / 0.33);
+
+        const coolMain = [88, 224, 255];
+        const coolAux = [84, 150, 255];
+        const midMain = [108, 245, 255];
+        const midAux = [144, 104, 255];
+        const hotMain = [255, 84, 70];
+        const hotAux = [255, 124, 92];
+
+        const mediumMix = clamp((energy - 0.25) / 0.45);
+        const main = mixColor(mixColor(coolMain, midMain, mediumMix), hotMain, attack);
+        const aux = mixColor(mixColor(coolAux, midAux, mediumMix), hotAux, attack);
+        const hot = mixColor([232, 255, 255], [255, 235, 235], attack);
+        const palette = { main, aux, hot };
+
+        drawWavefronts(cx, cy, baseR, energy, attack, palette);
+        drawBeam(cx, cy, baseR, energy, attack, palette);
+        drawEye(cx, cy, baseR, energy, attack, palette);
+      };
+    };
+
+    setDirection('center');
+    if (typeof setPanelVisible === 'function') {
+      setPanelVisible(true);
     }
-
-    function drawBeam(cx, cy, baseR, energy, attack, palette) {
-      const beamPower = clamp((energy - 0.62) / 0.38) * (0.6 + attack * 0.4);
-      if (beamPower <= 0.02) return;
-
-      const length = Math.min(w, h) * (0.42 + beamPower * 0.45);
-      const width = baseR * (0.08 + beamPower * 0.26);
-      const flicker = 1 + Math.sin(state.t * 34) * 0.06;
-      const endX = cx + length;
-
-      const grad = ctx.createLinearGradient(cx, cy, endX, cy);
-      grad.addColorStop(0, colorStr([255, 250, 245], 0.68 * beamPower));
-      grad.addColorStop(0.12, colorStr(palette.hot, 0.52 * beamPower));
-      grad.addColorStop(0.55, colorStr(palette.main, 0.25 * beamPower));
-      grad.addColorStop(1, 'rgba(0,0,0,0)');
-
-      ctx.save();
-      ctx.globalCompositeOperation = 'screen';
-      ctx.fillStyle = grad;
-      ctx.beginPath();
-      ctx.moveTo(cx + baseR * 0.4, cy - width * flicker);
-      ctx.lineTo(endX, cy - width * 0.32);
-      ctx.lineTo(endX, cy + width * 0.32);
-      ctx.lineTo(cx + baseR * 0.4, cy + width * flicker);
-      ctx.closePath();
-      ctx.fill();
-
-      const core = ctx.createLinearGradient(cx, cy, endX, cy);
-      core.addColorStop(0, colorStr([255, 255, 255], 0.9 * beamPower));
-      core.addColorStop(0.28, colorStr(palette.hot, 0.45 * beamPower));
-      core.addColorStop(1, 'rgba(255,255,255,0)');
-      ctx.strokeStyle = core;
-      ctx.lineWidth = Math.max(1.2, width * 0.18);
-      ctx.beginPath();
-      ctx.moveTo(cx + baseR * 0.3, cy);
-      ctx.lineTo(endX, cy);
-      ctx.stroke();
-      ctx.restore();
-    }
-
-    function render() {
-      requestAnimationFrame(render);
-      sampleAudio();
-
-      state.t += 0.012 + state.level * 0.02;
-
-      const cx = w * 0.5;
-      const cy = h * 0.5;
-      const baseR = Math.min(w, h) * 0.12;
-
-      if (state.bgAlpha > 0) {
-        ctx.fillStyle = `rgba(2, 6, 16, ${state.bgAlpha})`;
-        ctx.fillRect(0, 0, w, h);
-      } else {
-        ctx.clearRect(0, 0, w, h);
-      }
-
-      const energy = clamp(state.level * 1.15 + Math.sin(state.t * 1.4) * 0.03 + 0.05);
-      const attack = clamp((energy - 0.67) / 0.33);
-
-      const coolMain = [88, 224, 255];
-      const coolAux = [84, 150, 255];
-      const midMain = [108, 245, 255];
-      const midAux = [144, 104, 255];
-      const hotMain = [255, 84, 70];
-      const hotAux = [255, 124, 92];
-
-      const mediumMix = clamp((energy - 0.25) / 0.45);
-      const attackMix = attack;
-
-      const main = mixColor(mixColor(coolMain, midMain, mediumMix), hotMain, attackMix);
-      const aux = mixColor(mixColor(coolAux, midAux, mediumMix), hotAux, attackMix);
-      const hot = mixColor([232, 255, 255], [255, 235, 235], attackMix);
-      const palette = { main, aux, hot };
-
-      drawWavefronts(cx, cy, baseR, energy, attack, palette);
-      drawBeam(cx, cy, baseR, energy, attack, palette);
-      drawEye(cx, cy, baseR, energy, attack, palette);
-    }
-
-    render();
+    new p5(sketch);
   </script>
 </body>
 </html>
