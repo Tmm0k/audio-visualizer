@@ -13,6 +13,11 @@
       --hud-bg: rgba(13, 28, 52, 0.36);
       --hud-border: rgba(127, 223, 255, 0.35);
       --hud-glow: rgba(115, 220, 255, 0.4);
+      --accent: #58e0ff;
+      --accent-strong: #49b6ec;
+      --accent-border: rgba(127, 230, 255, 0.45);
+      --accent-soft: rgba(80, 186, 232, 0.28);
+      --accent-deep: rgba(20, 61, 102, 0.3);
     }
 
     * { box-sizing: border-box; }
@@ -70,7 +75,7 @@
       z-index: 13;
       border-radius: 999px;
       border: 1px solid var(--hud-border);
-      background: linear-gradient(180deg, rgba(80, 186, 232, 0.28), rgba(20, 61, 102, 0.3));
+      background: linear-gradient(180deg, var(--accent-soft), var(--accent-deep));
       box-shadow:
         inset 0 0 14px rgba(111, 215, 255, 0.16),
         0 0 16px rgba(31, 130, 180, 0.24);
@@ -110,16 +115,27 @@
 
     input[type="range"] {
       width: 140px;
-      accent-color: #63dbff;
+      accent-color: var(--accent);
       cursor: pointer;
+    }
+
+    select {
+      width: 140px;
+      border-radius: 9px;
+      border: 1px solid var(--accent-border);
+      color: var(--text);
+      background: linear-gradient(180deg, var(--accent-soft), rgba(12, 27, 48, 0.72));
+      padding: 5px 8px;
+      font-size: 12px;
+      outline: none;
     }
 
     button {
       appearance: none;
-      border: 1px solid rgba(127, 230, 255, 0.45);
+      border: 1px solid var(--accent-border);
       border-radius: 999px;
       color: #d9f7ff;
-      background: linear-gradient(180deg, rgba(73, 182, 236, 0.3), rgba(19, 92, 143, 0.25));
+      background: linear-gradient(180deg, var(--accent-soft), var(--accent-deep));
       padding: 7px 12px;
       font-size: 12px;
       letter-spacing: 0.02em;
@@ -172,7 +188,7 @@
     .joy-btn {
       border-radius: 14px;
       border: 1px solid rgba(137, 234, 255, 0.35);
-      background: linear-gradient(180deg, rgba(85, 182, 224, 0.3), rgba(20, 57, 95, 0.3));
+      background: linear-gradient(180deg, var(--accent-soft), var(--accent-deep));
       color: #d8f6ff;
       font-weight: 600;
       font-size: 14px;
@@ -222,6 +238,21 @@
       <input id="bgAlpha" type="range" min="0" max="0.35" step="0.01" value="0" />
     </div>
     <div class="row">
+      <strong>Theme</strong>
+      <select id="themeSelect" aria-label="Theme">
+        <option value="matrix">Matrix</option>
+        <option value="tagged">Tagged</option>
+      </select>
+    </div>
+    <div class="row">
+      <strong>Oracle Mood</strong>
+      <select id="moodSelect" aria-label="Oracle Mood">
+        <option value="normal">Normal</option>
+        <option value="almost-angry">Almost Angry</option>
+        <option value="angry">Angry</option>
+      </select>
+    </div>
+    <div class="row">
       <strong>Squint</strong>
       <button id="squintBtn" aria-pressed="false">Off</button>
     </div>
@@ -250,8 +281,73 @@
     const sensitivityEl = document.getElementById('sensitivity');
     const smoothEl = document.getElementById('smooth');
     const bgAlphaEl = document.getElementById('bgAlpha');
+    const themeSelectEl = document.getElementById('themeSelect');
+    const moodSelectEl = document.getElementById('moodSelect');
     const squintBtn = document.getElementById('squintBtn');
     const joyBtns = Array.from(document.querySelectorAll('.joy-btn'));
+
+    const STORAGE_KEYS = {
+      theme: 'oracleTheme',
+      mood: 'oracleMood',
+      squint: 'oracleManualSquint',
+    };
+
+    const THEMES = {
+      matrix: {
+        ui: {
+          panelBg: 'rgba(5, 11, 24, 0.7)',
+          panelBorder: 'rgba(120, 210, 255, 0.28)',
+          text: '#d9f8ff',
+          muted: '#8fb8c7',
+          hudBg: 'rgba(13, 28, 52, 0.36)',
+          hudBorder: 'rgba(127, 223, 255, 0.35)',
+          hudGlow: 'rgba(115, 220, 255, 0.4)',
+          accent: '#58e0ff',
+          accentStrong: '#49b6ec',
+          accentBorder: 'rgba(127, 230, 255, 0.45)',
+          accentSoft: 'rgba(80, 186, 232, 0.28)',
+          accentDeep: 'rgba(20, 61, 102, 0.3)',
+        },
+        palette: {
+          coolMain: [88, 224, 255],
+          coolAux: [84, 150, 255],
+          midMain: [108, 245, 255],
+          midAux: [144, 104, 255],
+          hotMain: [255, 84, 70],
+          hotAux: [255, 124, 92],
+        },
+      },
+      tagged: {
+        ui: {
+          panelBg: 'rgba(5, 16, 25, 0.74)',
+          panelBorder: 'rgba(76, 174, 187, 0.35)',
+          text: '#daf5f7',
+          muted: '#88b8bf',
+          hudBg: 'rgba(10, 26, 31, 0.43)',
+          hudBorder: 'rgba(91, 187, 201, 0.4)',
+          hudGlow: 'rgba(70, 171, 187, 0.46)',
+          accent: '#2a8390',
+          accentStrong: '#39a2b1',
+          accentBorder: 'rgba(91, 187, 201, 0.53)',
+          accentSoft: 'rgba(52, 154, 170, 0.32)',
+          accentDeep: 'rgba(14, 65, 76, 0.36)',
+        },
+        palette: {
+          coolMain: [42, 131, 144],
+          coolAux: [52, 149, 166],
+          midMain: [77, 192, 206],
+          midAux: [112, 168, 218],
+          hotMain: [255, 120, 88],
+          hotAux: [255, 168, 118],
+        },
+      },
+    };
+
+    const ORACLE_MOODS = {
+      normal: { squint: 0, hotMain: null, hotAux: null },
+      'almost-angry': { squint: 0.62, hotMain: [255, 136, 64], hotAux: [255, 182, 110] },
+      angry: { squint: 0.92, hotMain: [255, 64, 64], hotAux: [255, 112, 112] },
+    };
 
     function clamp(v, a = 0, b = 1) {
       return Math.max(a, Math.min(b, v));
@@ -291,10 +387,59 @@
       ringActivity: 0,
       squint: false,
       squintAmt: 0,
+      theme: localStorage.getItem(STORAGE_KEYS.theme) || 'matrix',
+      mood: localStorage.getItem(STORAGE_KEYS.mood) || 'normal',
       eyeTarget: { x: 0, y: 0 },
       eyeCurrent: { x: 0, y: 0 },
       direction: 'center',
     };
+
+
+    state.squint = localStorage.getItem(STORAGE_KEYS.squint) === '1';
+    if (!THEMES[state.theme]) state.theme = 'matrix';
+    if (!ORACLE_MOODS[state.mood]) state.mood = 'normal';
+
+    function applyTheme(themeName) {
+      const theme = THEMES[themeName] || THEMES.matrix;
+      const root = document.documentElement.style;
+      root.setProperty('--panel-bg', theme.ui.panelBg);
+      root.setProperty('--panel-border', theme.ui.panelBorder);
+      root.setProperty('--text', theme.ui.text);
+      root.setProperty('--muted', theme.ui.muted);
+      root.setProperty('--hud-bg', theme.ui.hudBg);
+      root.setProperty('--hud-border', theme.ui.hudBorder);
+      root.setProperty('--hud-glow', theme.ui.hudGlow);
+      root.setProperty('--accent', theme.ui.accent);
+      root.setProperty('--accent-strong', theme.ui.accentStrong);
+      root.setProperty('--accent-border', theme.ui.accentBorder);
+      root.setProperty('--accent-soft', theme.ui.accentSoft);
+      root.setProperty('--accent-deep', theme.ui.accentDeep);
+    }
+
+    function setTheme(themeName) {
+      state.theme = THEMES[themeName] ? themeName : 'matrix';
+      themeSelectEl.value = state.theme;
+      applyTheme(state.theme);
+      localStorage.setItem(STORAGE_KEYS.theme, state.theme);
+    }
+
+    function setMood(mood) {
+      state.mood = ORACLE_MOODS[mood] ? mood : 'normal';
+      moodSelectEl.value = state.mood;
+      localStorage.setItem(STORAGE_KEYS.mood, state.mood);
+    }
+
+    function updateSquintButton() {
+      squintBtn.classList.toggle('active', state.squint);
+      squintBtn.textContent = state.squint ? 'On' : 'Off';
+      squintBtn.setAttribute('aria-pressed', String(state.squint));
+    }
+
+    function setManualSquint(enabled) {
+      state.squint = enabled;
+      updateSquintButton();
+      localStorage.setItem(STORAGE_KEYS.squint, state.squint ? '1' : '0');
+    }
 
     function setPanelVisible(visible) {
       panel.classList.toggle('hidden', !visible);
@@ -362,11 +507,11 @@
     });
 
     squintBtn.addEventListener('click', () => {
-      state.squint = !state.squint;
-      squintBtn.classList.toggle('active', state.squint);
-      squintBtn.textContent = state.squint ? 'On' : 'Off';
-      squintBtn.setAttribute('aria-pressed', String(state.squint));
+      setManualSquint(!state.squint);
     });
+
+    themeSelectEl.addEventListener('change', () => setTheme(themeSelectEl.value));
+    moodSelectEl.addEventListener('change', () => setMood(moodSelectEl.value));
 
     joyBtns.forEach((btn) => {
       btn.addEventListener('click', () => setDirection(btn.dataset.dir));
@@ -533,8 +678,8 @@
         const irisCx = cx + eyeOffsetX;
         const irisCy = cy + eyeOffsetY;
 
-        const aperture = 1 - state.squintAmt * 0.38;
-        const focus = 1 + state.squintAmt * 0.2;
+        const aperture = 1 - state.squintAmt * 0.55;
+        const focus = 1 + state.squintAmt * 0.28;
 
         const bloomRadius = baseR * (2 + energy * 1.7 + attack * 1.2 + state.squintAmt * 0.2);
         const bloom = p.drawingContext.createRadialGradient(cx, cy, 0, cx, cy, bloomRadius);
@@ -604,6 +749,20 @@
           coreR * 2
         );
 
+        if (state.squintAmt > 0.05) {
+          const moodIntensity = clamp((state.squintAmt - 0.25) / 0.75);
+          p.noFill();
+          p.stroke(palette.hot[0], palette.hot[1], palette.hot[2], (0.4 + moodIntensity * 0.35) * 255);
+          p.strokeWeight(baseR * (0.03 + moodIntensity * 0.01));
+          const lidWidth = irisR * (1.7 - moodIntensity * 0.18);
+          const lidRise = irisR * (0.38 + moodIntensity * 0.19);
+          const browTilt = irisR * (0.14 + moodIntensity * 0.1);
+          p.line(irisCx - lidWidth * 0.5, irisCy - lidRise + browTilt, irisCx + lidWidth * 0.5, irisCy - lidRise - browTilt);
+          p.stroke(palette.main[0], palette.main[1], palette.main[2], (0.28 + moodIntensity * 0.25) * 255);
+          p.strokeWeight(baseR * (0.012 + moodIntensity * 0.004));
+          p.line(irisCx - lidWidth * 0.42, irisCy + lidRise * 0.5, irisCx + lidWidth * 0.42, irisCy + lidRise * 0.5);
+        }
+
         p.pop();
 
         // Removed horizontal top/bottom shutter overlays per latest visual request.
@@ -617,7 +776,10 @@
         state.t += 0.012 + state.level * 0.02;
         state.eyeCurrent.x = lerp(state.eyeCurrent.x, state.eyeTarget.x, 0.085);
         state.eyeCurrent.y = lerp(state.eyeCurrent.y, state.eyeTarget.y, 0.085);
-        state.squintAmt = lerp(state.squintAmt, state.squint ? 1 : 0, 0.1);
+        const moodConfig = ORACLE_MOODS[state.mood] || ORACLE_MOODS.normal;
+        const manualSquintAmount = state.squint ? 0.55 : 0;
+        const squintTarget = Math.max(moodConfig.squint, manualSquintAmount);
+        state.squintAmt = lerp(state.squintAmt, squintTarget, 0.1);
 
         if (state.bgAlpha > 0) {
           p.background(2, 6, 16, state.bgAlpha * 255);
@@ -632,17 +794,15 @@
         const energy = clamp(state.level * 1.15 + Math.sin(state.t * 1.4) * 0.03 + 0.05);
         const attack = clamp((energy - 0.67) / 0.33);
 
-        const coolMain = [88, 224, 255];
-        const coolAux = [84, 150, 255];
-        const midMain = [108, 245, 255];
-        const midAux = [144, 104, 255];
-        const hotMain = [255, 84, 70];
-        const hotAux = [255, 124, 92];
+        const theme = THEMES[state.theme] || THEMES.matrix;
+        const themePalette = theme.palette;
 
         const mediumMix = clamp((energy - 0.25) / 0.45);
-        const main = mixColor(mixColor(coolMain, midMain, mediumMix), hotMain, attack);
-        const aux = mixColor(mixColor(coolAux, midAux, mediumMix), hotAux, attack);
-        const hot = mixColor([232, 255, 255], [255, 235, 235], attack);
+        const emotionMain = moodConfig.hotMain || themePalette.hotMain;
+        const emotionAux = moodConfig.hotAux || themePalette.hotAux;
+        const main = mixColor(mixColor(themePalette.coolMain, themePalette.midMain, mediumMix), emotionMain, attack);
+        const aux = mixColor(mixColor(themePalette.coolAux, themePalette.midAux, mediumMix), emotionAux, attack);
+        const hot = mixColor([232, 255, 255], moodConfig.hotMain ? [255, 242, 225] : [255, 235, 235], attack);
         const palette = { main, aux, hot };
 
         drawWavefronts(cx, cy, baseR, energy, attack, palette);
@@ -651,6 +811,9 @@
       };
     };
 
+    updateSquintButton();
+    setTheme(state.theme);
+    setMood(state.mood);
     setDirection('center');
     if (typeof window.setPanelVisible === 'function') {
       window.setPanelVisible(true);
