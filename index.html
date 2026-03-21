@@ -755,14 +755,14 @@
         p.circle(irisCx, irisCy, irisR * (0.83 + liveShimmer * 0.02) * 2 * focus);
 
         const pupil = p.drawingContext.createRadialGradient(irisCx, irisCy, 0, irisCx, irisCy, pupilR * 1.45);
-        pupil.addColorStop(0, 'rgba(255,255,255,0.95)');
+        pupil.addColorStop(0, `rgba(${palette.hot[0]},${palette.hot[1]},${palette.hot[2]},0.95)`);
         pupil.addColorStop(0.35, `rgba(${palette.hot[0]},${palette.hot[1]},${palette.hot[2]},0.9)`);
         pupil.addColorStop(1, 'rgba(8,10,18,0.95)');
         p.drawingContext.fillStyle = pupil;
         p.noStroke();
         p.circle(irisCx, irisCy, pupilR * 2 * (1 + state.squintAmt * 0.06));
 
-        p.fill(255, 255, 255, 230);
+        p.fill(palette.hot[0], palette.hot[1], palette.hot[2], 230);
         p.circle(
           irisCx + Math.cos(state.t * 1.2) * coreR * 0.35,
           irisCy + Math.sin(state.t * 1.5) * coreR * 0.28,
