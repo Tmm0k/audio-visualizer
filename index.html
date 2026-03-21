@@ -13,11 +13,16 @@
       --hud-bg: rgba(13, 28, 52, 0.36);
       --hud-border: rgba(127, 223, 255, 0.35);
       --hud-glow: rgba(115, 220, 255, 0.4);
-      --accent: #58e0ff;
-      --accent-strong: #49b6ec;
-      --accent-border: rgba(127, 230, 255, 0.45);
-      --accent-soft: rgba(80, 186, 232, 0.28);
-      --accent-deep: rgba(20, 61, 102, 0.3);
+      --range-accent: #63dbff;
+      --button-border: rgba(127, 230, 255, 0.45);
+      --button-top: rgba(73, 182, 236, 0.3);
+      --button-bottom: rgba(19, 92, 143, 0.25);
+      --panel-toggle-top: rgba(80, 186, 232, 0.28);
+      --panel-toggle-bottom: rgba(20, 61, 102, 0.3);
+      --select-top: rgba(80, 186, 232, 0.28);
+      --select-bottom: rgba(12, 27, 48, 0.72);
+      --joy-top: rgba(85, 182, 224, 0.3);
+      --joy-bottom: rgba(20, 57, 95, 0.3);
     }
 
     * { box-sizing: border-box; }
@@ -75,7 +80,7 @@
       z-index: 13;
       border-radius: 999px;
       border: 1px solid var(--hud-border);
-      background: linear-gradient(180deg, var(--accent-soft), var(--accent-deep));
+      background: linear-gradient(180deg, var(--panel-toggle-top), var(--panel-toggle-bottom));
       box-shadow:
         inset 0 0 14px rgba(111, 215, 255, 0.16),
         0 0 16px rgba(31, 130, 180, 0.24);
@@ -115,16 +120,16 @@
 
     input[type="range"] {
       width: 140px;
-      accent-color: var(--accent);
+      accent-color: var(--range-accent);
       cursor: pointer;
     }
 
     select {
       width: 140px;
       border-radius: 9px;
-      border: 1px solid var(--accent-border);
+      border: 1px solid var(--button-border);
       color: var(--text);
-      background: linear-gradient(180deg, var(--accent-soft), rgba(12, 27, 48, 0.72));
+      background: linear-gradient(180deg, var(--select-top), var(--select-bottom));
       padding: 5px 8px;
       font-size: 12px;
       outline: none;
@@ -132,10 +137,10 @@
 
     button {
       appearance: none;
-      border: 1px solid var(--accent-border);
+      border: 1px solid var(--button-border);
       border-radius: 999px;
       color: #d9f7ff;
-      background: linear-gradient(180deg, var(--accent-soft), var(--accent-deep));
+      background: linear-gradient(180deg, var(--button-top), var(--button-bottom));
       padding: 7px 12px;
       font-size: 12px;
       letter-spacing: 0.02em;
@@ -188,7 +193,7 @@
     .joy-btn {
       border-radius: 14px;
       border: 1px solid rgba(137, 234, 255, 0.35);
-      background: linear-gradient(180deg, var(--accent-soft), var(--accent-deep));
+      background: linear-gradient(180deg, var(--joy-top), var(--joy-bottom));
       color: #d8f6ff;
       font-weight: 600;
       font-size: 14px;
@@ -302,11 +307,16 @@
           hudBg: 'rgba(13, 28, 52, 0.36)',
           hudBorder: 'rgba(127, 223, 255, 0.35)',
           hudGlow: 'rgba(115, 220, 255, 0.4)',
-          accent: '#58e0ff',
-          accentStrong: '#49b6ec',
-          accentBorder: 'rgba(127, 230, 255, 0.45)',
-          accentSoft: 'rgba(80, 186, 232, 0.28)',
-          accentDeep: 'rgba(20, 61, 102, 0.3)',
+          rangeAccent: '#63dbff',
+          buttonBorder: 'rgba(127, 230, 255, 0.45)',
+          buttonTop: 'rgba(73, 182, 236, 0.3)',
+          buttonBottom: 'rgba(19, 92, 143, 0.25)',
+          panelToggleTop: 'rgba(80, 186, 232, 0.28)',
+          panelToggleBottom: 'rgba(20, 61, 102, 0.3)',
+          selectTop: 'rgba(80, 186, 232, 0.28)',
+          selectBottom: 'rgba(12, 27, 48, 0.72)',
+          joyTop: 'rgba(85, 182, 224, 0.3)',
+          joyBottom: 'rgba(20, 57, 95, 0.3)',
         },
         palette: {
           coolMain: [88, 224, 255],
@@ -326,11 +336,16 @@
           hudBg: 'rgba(10, 26, 31, 0.43)',
           hudBorder: 'rgba(91, 187, 201, 0.4)',
           hudGlow: 'rgba(70, 171, 187, 0.46)',
-          accent: '#2a8390',
-          accentStrong: '#39a2b1',
-          accentBorder: 'rgba(91, 187, 201, 0.53)',
-          accentSoft: 'rgba(52, 154, 170, 0.32)',
-          accentDeep: 'rgba(14, 65, 76, 0.36)',
+          rangeAccent: '#2a8390',
+          buttonBorder: 'rgba(91, 187, 201, 0.53)',
+          buttonTop: 'rgba(52, 154, 170, 0.32)',
+          buttonBottom: 'rgba(14, 65, 76, 0.36)',
+          panelToggleTop: 'rgba(52, 154, 170, 0.32)',
+          panelToggleBottom: 'rgba(14, 65, 76, 0.36)',
+          selectTop: 'rgba(52, 154, 170, 0.32)',
+          selectBottom: 'rgba(12, 36, 42, 0.74)',
+          joyTop: 'rgba(56, 167, 182, 0.34)',
+          joyBottom: 'rgba(12, 54, 64, 0.35)',
         },
         palette: {
           coolMain: [42, 131, 144],
@@ -344,9 +359,9 @@
     };
 
     const ORACLE_MOODS = {
-      normal: { squint: 0, hotMain: null, hotAux: null },
-      'almost-angry': { squint: 0.62, hotMain: [255, 136, 64], hotAux: [255, 182, 110] },
-      angry: { squint: 0.92, hotMain: [255, 64, 64], hotAux: [255, 112, 112] },
+      normal: { hotMain: null, hotAux: null },
+      'almost-angry': { hotMain: [255, 136, 64], hotAux: [255, 182, 110] },
+      angry: { hotMain: [255, 64, 64], hotAux: [255, 112, 112] },
     };
 
     function clamp(v, a = 0, b = 1) {
@@ -409,11 +424,16 @@
       root.setProperty('--hud-bg', theme.ui.hudBg);
       root.setProperty('--hud-border', theme.ui.hudBorder);
       root.setProperty('--hud-glow', theme.ui.hudGlow);
-      root.setProperty('--accent', theme.ui.accent);
-      root.setProperty('--accent-strong', theme.ui.accentStrong);
-      root.setProperty('--accent-border', theme.ui.accentBorder);
-      root.setProperty('--accent-soft', theme.ui.accentSoft);
-      root.setProperty('--accent-deep', theme.ui.accentDeep);
+      root.setProperty('--range-accent', theme.ui.rangeAccent);
+      root.setProperty('--button-border', theme.ui.buttonBorder);
+      root.setProperty('--button-top', theme.ui.buttonTop);
+      root.setProperty('--button-bottom', theme.ui.buttonBottom);
+      root.setProperty('--panel-toggle-top', theme.ui.panelToggleTop);
+      root.setProperty('--panel-toggle-bottom', theme.ui.panelToggleBottom);
+      root.setProperty('--select-top', theme.ui.selectTop);
+      root.setProperty('--select-bottom', theme.ui.selectBottom);
+      root.setProperty('--joy-top', theme.ui.joyTop);
+      root.setProperty('--joy-bottom', theme.ui.joyBottom);
     }
 
     function setTheme(themeName) {
@@ -678,8 +698,8 @@
         const irisCx = cx + eyeOffsetX;
         const irisCy = cy + eyeOffsetY;
 
-        const aperture = 1 - state.squintAmt * 0.55;
-        const focus = 1 + state.squintAmt * 0.28;
+        const aperture = 1 - state.squintAmt * 0.38;
+        const focus = 1 + state.squintAmt * 0.2;
 
         const bloomRadius = baseR * (2 + energy * 1.7 + attack * 1.2 + state.squintAmt * 0.2);
         const bloom = p.drawingContext.createRadialGradient(cx, cy, 0, cx, cy, bloomRadius);
@@ -749,19 +769,6 @@
           coreR * 2
         );
 
-        if (state.squintAmt > 0.05) {
-          const moodIntensity = clamp((state.squintAmt - 0.25) / 0.75);
-          p.noFill();
-          p.stroke(palette.hot[0], palette.hot[1], palette.hot[2], (0.4 + moodIntensity * 0.35) * 255);
-          p.strokeWeight(baseR * (0.03 + moodIntensity * 0.01));
-          const lidWidth = irisR * (1.7 - moodIntensity * 0.18);
-          const lidRise = irisR * (0.38 + moodIntensity * 0.19);
-          const browTilt = irisR * (0.14 + moodIntensity * 0.1);
-          p.line(irisCx - lidWidth * 0.5, irisCy - lidRise + browTilt, irisCx + lidWidth * 0.5, irisCy - lidRise - browTilt);
-          p.stroke(palette.main[0], palette.main[1], palette.main[2], (0.28 + moodIntensity * 0.25) * 255);
-          p.strokeWeight(baseR * (0.012 + moodIntensity * 0.004));
-          p.line(irisCx - lidWidth * 0.42, irisCy + lidRise * 0.5, irisCx + lidWidth * 0.42, irisCy + lidRise * 0.5);
-        }
 
         p.pop();
 
@@ -777,9 +784,7 @@
         state.eyeCurrent.x = lerp(state.eyeCurrent.x, state.eyeTarget.x, 0.085);
         state.eyeCurrent.y = lerp(state.eyeCurrent.y, state.eyeTarget.y, 0.085);
         const moodConfig = ORACLE_MOODS[state.mood] || ORACLE_MOODS.normal;
-        const manualSquintAmount = state.squint ? 0.55 : 0;
-        const squintTarget = Math.max(moodConfig.squint, manualSquintAmount);
-        state.squintAmt = lerp(state.squintAmt, squintTarget, 0.1);
+        state.squintAmt = lerp(state.squintAmt, state.squint ? 1 : 0, 0.1);
 
         if (state.bgAlpha > 0) {
           p.background(2, 6, 16, state.bgAlpha * 255);
